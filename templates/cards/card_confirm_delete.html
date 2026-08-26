@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Delete Flashcard{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto my-12 bg-white p-8 rounded-xl border border-neutral-200 text-center">
+    <h2 class="text-xl font-bold tracking-tight text-neutral-900">Delete this card?</h2>
+    <div class="p-3.5 my-4 bg-neutral-50 rounded-lg text-left text-xs border border-neutral-200">
+        <p class="font-semibold text-neutral-700">Front:</p>
+        <p class="text-neutral-500 mb-2 truncate">{{ card.front }}</p>
+        <p class="font-semibold text-neutral-700">Back:</p>
+        <p class="text-neutral-500 truncate">{{ card.back }}</p>
+    </div>
+
+    <form method="post" class="flex justify-center space-x-3">
+        {% csrf_token %}
+        <a href="{% url 'decks:deck_detail' card.deck.pk %}" class="px-4 py-2 bg-neutral-100 text-neutral-700 font-semibold text-xs rounded-lg hover:bg-neutral-200 transition">Cancel</a>
+        <button type="submit" class="px-5 py-2 bg-black hover:bg-neutral-800 text-white font-semibold text-xs rounded-lg transition">Delete Card</button>
+    </form>
+</div>
+{% endblock %}

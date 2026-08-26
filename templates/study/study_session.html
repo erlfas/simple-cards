@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+
+{% block title %}Study - {% if deck %}{{ deck.name }}{% else %}All Due Cards{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-5 select-none" id="studyApp">
+    <!-- Session Top Bar -->
+    <div class="flex items-center justify-between bg-white px-5 py-3 rounded-xl border border-neutral-200">
+        <div class="flex items-center space-x-3">
+            <a href="{% if deck %}{% url 'decks:deck_detail' deck.pk %}{% else %}{% url 'decks:deck_list' %}{% endif %}" class="text-neutral-400 hover:text-black transition" title="Exit">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </a>
+            <div>
+                <h2 class="text-xs font-bold text-neutral-900 uppercase tracking-wider">
+                    {% if deck %}{{ deck.name }}{% else %}All Due Cards{% endif %}
+                </h2>
+                <span class="text-[11px] text-neutral-400 font-mono" id="progressText">1 / {{ total_cards }}</span>
+            </div>
+        </div>
+
+        <!-- Session Progress Bar -->
+        <div class="w-32 sm:w-44 bg-neutral-100 h-1.5 rounded-full overflow-hidden">
+            <div id="sessionProgressBar" class="bg-black h-full transition-all duration-300" style="width: 0%;"></div>
+        </div>
+
+        <!-- Keyboard Hint -->
+        <div class="hidden sm:flex items-center space-x-1 text-neutral-400 text-[11px] font-mono">
+            <kbd class="px-1 bg-neutral-100 rounded border border-neutral-200">Space</kbd>
+            <span>flip</span>
+            <kbd class="px-1 bg-neutral-100 rounded border border-neutral-200 ml-1">1-4</kbd>
+            <span>rate</span>
+        </div>
+    </div>
+
+    <!-- Flashcard Area with 3D Flip -->
+    <div class="perspective-1000 w-full min-h-[380px]">
+        <div id="cardInner" class="relative w-full min-h-[380px] transition-transform duration-500 transform-style-3d cursor-pointer" onclick="toggleFlip()">
+            
+            <!-- Front of Card -->
+            <div id="cardFront" class="absolute inset-0 bg-white p-8 sm:p-10 rounded-2xl border border-neutral-300 shadow-sm flex flex-col justify-between backface-hidden">
+                <div class="flex items-center justify-between text-xs text-neutral-400">
+                    <span id="cardStateBadge" class="font-mono text-[10px] uppercase font-bold text-neutral-500 bg-neutral-100 px-2 py-0.5 rounded">NEW</span>
+                    <span id="hintToggleBtn" onclick="event.stopPropagation(); toggleHint();" class="text-neutral-600 hover:text-black flex items-center space-x-1 cursor-pointer">
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                        <span>Hint [H]</span>
+                    </span>
+                </div>
+
+                <!-- Front Question Content -->
+                <div class="my-auto text-center py-6">
+                    <div id="frontText" class="text-xl sm:text-2xl font-semibold text-neutral-900 leading-relaxed max-h-64 overflow-y-auto">
+                        {{ initial_card.rendered_front|safe }}
+                    </div>
+
+                    <!-- Optional Hint Box -->
+                    <div id="hintBox" class="hidden mt-4 p-3 bg-neutral-50 border border-neutral-200 rounded-lg text-xs text-neutral-700 inline-block max-w-md mx-auto">
+                        <span class="font-bold">Hint:</span> <span id="hintText">{{ initial_card.hint }}</span>
+                    </div>
+                </div>
+
+                <div class="text-center text-xs text-neutral-400 font-mono">
+                    Press <kbd class="px-1.5 py-0.5 bg-neutral-100 rounded border border-neutral-200 text-[10px]">Space</kbd> to reveal
+                </div>
+            </div>
+
+            <!-- Back of Card -->
+            <div id="cardBack" class="absolute inset-0 bg-white p-8 sm:p-10 rounded-2xl border-2 border-black shadow-sm flex flex-col justify-between backface-hidden rotate-y-180">
+                <div class="flex items-center justify-between text-xs text-neutral-400 border-b border-neutral-100 pb-2">
+                    <span class="font-bold text-neutral-700 uppercase tracking-wider text-[10px]">Answer</span>
+                    <span class="text-[10px] text-neutral-400">Rate your recall</span>
+                </div>
+
+                <!-- Back Answer Content -->
+                <div class="my-auto text-center py-6">
+                    <div id="backText" class="text-lg sm:text-xl font-medium text-neutral-900 leading-relaxed max-h-64 overflow-y-auto">
+                        {{ initial_card.rendered_back|safe }}
+                    </div>
+                </div>
+
+                <div class="text-center text-xs text-neutral-400 font-mono">
+                    Grade with keys 1, 2, 3, 4
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Rating Controls Toolbar -->
+    <div id="controlsRevealed" class="hidden grid grid-cols-4 gap-2.5">
+        <!-- Again (1) -->
+        <button onclick="submitCardRating(1)" class="group bg-white hover:bg-neutral-900 hover:text-white border border-neutral-300 hover:border-black p-3 rounded-xl transition text-center flex flex-col items-center">
+            <div class="flex items-center space-x-1 font-bold text-xs">
+                <span>Again</span>
+                <span class="text-[10px] px-1 bg-neutral-100 group-hover:bg-neutral-800 group-hover:text-white rounded font-mono">1</span>
+            </div>
+            <span id="intervalAgain" class="text-[11px] text-neutral-400 group-hover:text-neutral-300 mt-1 font-mono">&lt; 10m</span>
+        </button>
+
+        <!-- Hard (2) -->
+        <button onclick="submitCardRating(2)" class="group bg-white hover:bg-neutral-900 hover:text-white border border-neutral-300 hover:border-black p-3 rounded-xl transition text-center flex flex-col items-center">
+            <div class="flex items-center space-x-1 font-bold text-xs">
+                <span>Hard</span>
+                <span class="text-[10px] px-1 bg-neutral-100 group-hover:bg-neutral-800 group-hover:text-white rounded font-mono">2</span>
+            </div>
+            <span id="intervalHard" class="text-[11px] text-neutral-400 group-hover:text-neutral-300 mt-1 font-mono">1d</span>
+        </button>
+
+        <!-- Good (3) -->
+        <button onclick="submitCardRating(3)" class="group bg-white hover:bg-neutral-900 hover:text-white border border-neutral-300 hover:border-black p-3 rounded-xl transition text-center flex flex-col items-center">
+            <div class="flex items-center space-x-1 font-bold text-xs">
+                <span>Good</span>
+                <span class="text-[10px] px-1 bg-neutral-100 group-hover:bg-neutral-800 group-hover:text-white rounded font-mono">3</span>
+            </div>
+            <span id="intervalGood" class="text-[11px] text-neutral-400 group-hover:text-neutral-300 mt-1 font-mono">3d</span>
+        </button>
+
+        <!-- Easy (4) -->
+        <button onclick="submitCardRating(4)" class="group bg-white hover:bg-neutral-900 hover:text-white border border-neutral-300 hover:border-black p-3 rounded-xl transition text-center flex flex-col items-center">
+            <div class="flex items-center space-x-1 font-bold text-xs">
+                <span>Easy</span>
+                <span class="text-[10px] px-1 bg-neutral-100 group-hover:bg-neutral-800 group-hover:text-white rounded font-mono">4</span>
+            </div>
+            <span id="intervalEasy" class="text-[11px] text-neutral-400 group-hover:text-neutral-300 mt-1 font-mono">7d</span>
+        </button>
+    </div>
+
+    <!-- Initial "Show Answer" button before flip -->
+    <div id="controlsUnrevealed">
+        <button onclick="toggleFlip()" class="w-full py-3.5 bg-black hover:bg-neutral-800 text-white font-semibold text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center space-x-2">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+            <span>Show Answer (Space)</span>
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Session state
+    const cardQueue = {{ card_ids_json|safe }};
+    let currentIndex = 0;
+    let isFlipped = false;
+    let cardStartTime = Date.now();
+    let initialIntervals = {{ initial_intervals|safe }};
+
+    function updateProgressBar() {
+        const percent = Math.round((currentIndex / cardQueue.length) * 100);
+        document.getElementById('sessionProgressBar').style.width = percent + '%';
+        document.getElementById('progressText').innerText = `${currentIndex + 1} / ${cardQueue.length}`;
+    }
+
+    function setIntervalLabels(intervals) {
+        if (!intervals) return;
+        document.getElementById('intervalAgain').innerText = '< ' + intervals['1'];
+        document.getElementById('intervalHard').innerText = intervals['2'];
+        document.getElementById('intervalGood').innerText = intervals['3'];
+        document.getElementById('intervalEasy').innerText = intervals['4'];
+    }
+
+    setIntervalLabels(initialIntervals);
+    updateProgressBar();
+
+    function toggleFlip() {
+        isFlipped = !isFlipped;
+        const inner = document.getElementById('cardInner');
+        const unrev = document.getElementById('controlsUnrevealed');
+        const rev = document.getElementById('controlsRevealed');
+
+        if (isFlipped) {
+            inner.classList.add('rotate-y-180');
+            unrev.classList.add('hidden');
+            rev.classList.remove('hidden');
+        } else {
+            inner.classList.remove('rotate-y-180');
+            rev.classList.add('hidden');
+            unrev.classList.remove('hidden');
+        }
+    }
+
+    function toggleHint() {
+        const hintBox = document.getElementById('hintBox');
+        if (hintBox.innerText.trim() !== 'Hint:') {
+            hintBox.classList.toggle('hidden');
+        }
+    }
+
+    async function submitCardRating(rating) {
+        const durationMs = Date.now() - cardStartTime;
+        const currentCardId = cardQueue[currentIndex];
+
+        try {
+            const response = await fetch("{% url 'study:submit_review' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}',
+                },
+                body: JSON.stringify({
+                    card_id: currentCardId,
+                    rating: rating,
+                    duration_ms: durationMs
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to record review');
+
+            currentIndex++;
+            if (currentIndex >= cardQueue.length) {
+                window.location.href = "{% url 'study:session_summary' %}?count=" + cardQueue.length;
+                return;
+            }
+
+            await loadNextCard(cardQueue[currentIndex]);
+
+        } catch (err) {
+            console.error(err);
+            alert('Error recording review. Please try again.');
+        }
+    }
+
+    async function loadNextCard(cardId) {
+        isFlipped = true;
+        toggleFlip();
+
+        const res = await fetch(`/study/card/${cardId}/json/`);
+        const data = await res.json();
+
+        document.getElementById('frontText').innerHTML = data.front;
+        document.getElementById('backText').innerHTML = data.back;
+        document.getElementById('cardStateBadge').innerText = data.state;
+        
+        const hintBox = document.getElementById('hintBox');
+        hintBox.classList.add('hidden');
+        document.getElementById('hintText').innerText = data.hint || '';
+        document.getElementById('hintToggleBtn').style.display = data.hint ? 'inline-flex' : 'none';
+
+        setIntervalLabels(data.intervals);
+
+        if (window.renderMathInElement) {
+            renderMathInElement(document.getElementById('frontText'), {
+                delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+            });
+            renderMathInElement(document.getElementById('backText'), {
+                delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]
+            });
+        }
+
+        updateProgressBar();
+        cardStartTime = Date.now();
+        lucide.createIcons();
+    }
+
+    // Keyboard Shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+        if (e.code === 'Space' || e.key === ' ') {
+            e.preventDefault();
+            toggleFlip();
+        } else if (e.key === 'h' || e.key === 'H') {
+            toggleHint();
+        } else if (isFlipped) {
+            if (e.key === '1') submitCardRating(1);
+            else if (e.key === '2') submitCardRating(2);
+            else if (e.key === '3') submitCardRating(3);
+            else if (e.key === '4') submitCardRating(4);
+        }
+    });
+</script>
+{% endblock %}

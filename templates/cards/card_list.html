@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Card Browser{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-neutral-900">Card Browser</h1>
+            <p class="text-xs text-neutral-500">Search and manage all cards</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <a href="{% url 'cards:bulk_create' %}" class="inline-flex items-center space-x-1.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-200 text-xs font-semibold px-3 py-2 rounded-lg transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Bulk Add</span>
+            </a>
+            <a href="{% url 'cards:card_create' %}" class="inline-flex items-center space-x-1.5 bg-black hover:bg-neutral-800 text-white text-xs font-semibold px-3.5 py-2 rounded-lg transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Add Card</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white p-3.5 rounded-xl border border-neutral-200">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-neutral-400"></i>
+                <input type="text" name="q" value="{{ search_query }}" placeholder="Search front, back, or tags..." class="w-full pl-8 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:border-black">
+            </div>
+            
+            <select name="deck" class="px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:border-black">
+                <option value="">All Decks</option>
+                {% for d in decks %}
+                    <option value="{{ d.id }}" {% if selected_deck == d.id %}selected{% endif %}>{{ d.name }}</option>
+                {% endfor %}
+            </select>
+
+            <div class="flex items-center space-x-2">
+                <select name="state" class="w-full px-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:border-black">
+                    <option value="">All States</option>
+                    <option value="NEW" {% if state_filter == 'NEW' %}selected{% endif %}>New</option>
+                    <option value="LEARNING" {% if state_filter == 'LEARNING' %}selected{% endif %}>Learning</option>
+                    <option value="REVIEW" {% if state_filter == 'REVIEW' %}selected{% endif %}>Review</option>
+                </select>
+                <button type="submit" class="bg-neutral-900 hover:bg-black text-white text-xs font-semibold px-3.5 py-1.5 rounded-lg transition">
+                    Filter
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Cards Table -->
+    <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+        {% if page_obj %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-neutral-50 text-neutral-600 uppercase font-semibold border-b border-neutral-200">
+                        <tr>
+                            <th class="px-4 py-2.5">Deck</th>
+                            <th class="px-4 py-2.5">Front (Question)</th>
+                            <th class="px-4 py-2.5">Back (Answer)</th>
+                            <th class="px-4 py-2.5">State</th>
+                            <th class="px-4 py-2.5">Interval</th>
+                            <th class="px-4 py-2.5">Due Date</th>
+                            <th class="px-4 py-2.5 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-100">
+                        {% for card in page_obj %}
+                            <tr class="hover:bg-neutral-50 transition">
+                                <td class="px-4 py-2.5 font-semibold text-neutral-700">
+                                    <a href="{% url 'decks:deck_detail' card.deck.id %}" class="hover:underline">{{ card.deck.name }}</a>
+                                </td>
+                                <td class="px-4 py-2.5 font-medium text-neutral-900 max-w-xs truncate">
+                                    {{ card.front }}
+                                    {% if card.tags %}
+                                        <span class="block text-[10px] text-neutral-400 font-mono mt-0.5">#{{ card.tags }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 text-neutral-600 max-w-xs truncate">
+                                    {{ card.back }}
+                                </td>
+                                <td class="px-4 py-2.5 font-mono text-neutral-600 text-[11px]">
+                                    {{ card.state }}
+                                </td>
+                                <td class="px-4 py-2.5 font-mono text-neutral-600">
+                                    {% if card.interval_days >= 1 %}
+                                        {{ card.interval_days|floatformat:1 }}d
+                                    {% else %}
+                                        10m
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 text-neutral-500">
+                                    {% if card.state == 'NEW' %}
+                                        -
+                                    {% else %}
+                                        {{ card.due_date|date:"M d, H:i" }}
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 text-right space-x-1">
+                                    <a href="{% url 'cards:card_update' card.pk %}" class="text-neutral-600 hover:text-black p-1 inline-block" title="Edit">
+                                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                    <a href="{% url 'cards:card_delete' card.pk %}" class="text-neutral-400 hover:text-black p-1 inline-block" title="Delete">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+                <div class="p-3 border-t border-neutral-100 flex justify-between items-center text-xs">
+                    <span class="text-neutral-500">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    <div class="space-x-1">
+                        {% if page_obj.has_previous %}
+                            <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&deck={{ selected_deck|default:'' }}&state={{ state_filter }}" class="px-2.5 py-1 bg-neutral-100 rounded-lg hover:bg-neutral-200">Previous</a>
+                        {% endif %}
+                        {% if page_obj.has_next %}
+                            <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&deck={{ selected_deck|default:'' }}&state={{ state_filter }}" class="px-2.5 py-1 bg-neutral-100 rounded-lg hover:bg-neutral-200">Next</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-12">
+                <p class="text-xs text-neutral-400">No cards match the filters.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ deck.name }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header -->
+    <div class="bg-white p-6 rounded-xl border border-neutral-200 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center space-x-3">
+                <a href="{% url 'decks:deck_list' %}" class="text-neutral-400 hover:text-black transition">
+                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                </a>
+                <h1 class="text-xl font-bold tracking-tight text-neutral-900">{{ deck.name }}</h1>
+            </div>
+            {% if deck.description %}
+                <p class="text-xs text-neutral-600 mt-1 max-w-2xl">{{ deck.description }}</p>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+            {% if deck.ready_to_study_count > 0 %}
+                <a href="{% url 'study:study_deck' deck.pk %}" class="inline-flex items-center space-x-1.5 bg-black hover:bg-neutral-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                    <span>Study ({{ deck.ready_to_study_count }})</span>
+                </a>
+            {% endif %}
+            
+            <a href="{% url 'cards:card_create' %}?deck={{ deck.pk }}" class="inline-flex items-center space-x-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-200 text-xs font-semibold px-3 py-2 rounded-lg transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>Add Card</span>
+            </a>
+            
+            <a href="{% url 'cards:bulk_create' %}?deck={{ deck.pk }}" class="inline-flex items-center space-x-1 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 border border-neutral-200 text-xs font-semibold px-3 py-2 rounded-lg transition">
+                <i data-lucide="upload" class="w-3.5 h-3.5"></i>
+                <span>Bulk Add</span>
+            </a>
+
+            <!-- Export & Edit -->
+            <div class="flex items-center space-x-1 pl-1 border-l border-neutral-200">
+                <a href="{% url 'decks:deck_export_csv' deck.pk %}" class="p-1.5 text-neutral-500 hover:text-black" title="Export CSV">
+                    <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'decks:deck_export_json' deck.pk %}" class="p-1.5 text-neutral-500 hover:text-black" title="Export JSON">
+                    <i data-lucide="file-code" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'decks:deck_update' deck.pk %}" class="p-1.5 text-neutral-500 hover:text-black" title="Settings">
+                    <i data-lucide="settings" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'decks:deck_delete' deck.pk %}" class="p-1.5 text-neutral-500 hover:text-black" title="Delete">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deck Stats Breakdown -->
+    <div class="grid grid-cols-4 gap-3">
+        <div class="bg-white p-3 rounded-xl border border-neutral-200 text-center">
+            <span class="block text-lg font-bold text-neutral-900">{{ deck.total_cards }}</span>
+            <span class="text-[11px] text-neutral-500">Total Cards</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-neutral-200 text-center">
+            <span class="block text-lg font-bold text-neutral-900">{{ deck.new_cards_count }}</span>
+            <span class="text-[11px] text-neutral-500">New</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-neutral-200 text-center">
+            <span class="block text-lg font-bold text-neutral-900">{{ deck.learning_cards_count }}</span>
+            <span class="text-[11px] text-neutral-500">Learning</span>
+        </div>
+        <div class="bg-white p-3 rounded-xl border border-neutral-200 text-center">
+            <span class="block text-lg font-bold text-neutral-900">{{ deck.due_cards_count }}</span>
+            <span class="text-[11px] text-neutral-500">Due</span>
+        </div>
+    </div>
+
+    <!-- Cards List Table -->
+    <div class="bg-white rounded-xl border border-neutral-200 overflow-hidden">
+        <!-- Filter Header -->
+        <div class="p-3.5 border-b border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <form method="get" class="flex items-center space-x-2">
+                <div class="relative">
+                    <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-2.5 text-neutral-400"></i>
+                    <input type="text" name="q" value="{{ query }}" placeholder="Filter cards..." class="pl-8 pr-3 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:border-black">
+                </div>
+                <select name="state" onchange="this.form.submit()" class="px-2.5 py-1 bg-neutral-50 border border-neutral-200 rounded-lg text-xs">
+                    <option value="">All States</option>
+                    <option value="NEW" {% if state_filter == 'NEW' %}selected{% endif %}>New</option>
+                    <option value="LEARNING" {% if state_filter == 'LEARNING' %}selected{% endif %}>Learning</option>
+                    <option value="REVIEW" {% if state_filter == 'REVIEW' %}selected{% endif %}>Review</option>
+                </select>
+            </form>
+            <span class="text-xs text-neutral-400">{{ cards|length }} cards</span>
+        </div>
+
+        {% if cards %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                    <thead class="bg-neutral-50 text-neutral-600 uppercase font-semibold border-b border-neutral-200">
+                        <tr>
+                            <th class="px-4 py-2.5">Front (Question)</th>
+                            <th class="px-4 py-2.5">Back (Answer)</th>
+                            <th class="px-4 py-2.5">State</th>
+                            <th class="px-4 py-2.5">Interval</th>
+                            <th class="px-4 py-2.5">Ease</th>
+                            <th class="px-4 py-2.5">Due Date</th>
+                            <th class="px-4 py-2.5 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-neutral-100">
+                        {% for card in cards %}
+                            <tr class="hover:bg-neutral-50 transition">
+                                <td class="px-4 py-2.5 font-medium text-neutral-900 max-w-xs truncate">
+                                    {{ card.front }}
+                                    {% if card.tags %}
+                                        <span class="block text-[10px] text-neutral-400 font-mono mt-0.5">#{{ card.tags }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 text-neutral-600 max-w-xs truncate">
+                                    {{ card.back }}
+                                </td>
+                                <td class="px-4 py-2.5 font-mono text-[11px] text-neutral-600">
+                                    {{ card.state }}
+                                </td>
+                                <td class="px-4 py-2.5 font-mono text-neutral-600">
+                                    {% if card.interval_days >= 1 %}
+                                        {{ card.interval_days|floatformat:1 }}d
+                                    {% else %}
+                                        10m
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 font-mono text-neutral-600">{{ card.ease_factor }}</td>
+                                <td class="px-4 py-2.5 text-neutral-500">
+                                    {% if card.state == 'NEW' %}
+                                        -
+                                    {% else %}
+                                        {{ card.due_date|date:"M d, H:i" }}
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-2.5 text-right space-x-1">
+                                    <a href="{% url 'cards:card_update' card.pk %}" class="text-neutral-600 hover:text-black p-1 inline-block" title="Edit">
+                                        <i data-lucide="edit-2" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                    <a href="{% url 'cards:card_delete' card.pk %}" class="text-neutral-400 hover:text-black p-1 inline-block" title="Delete">
+                                        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-12">
+                <p class="text-xs text-neutral-400">No cards found in this deck.</p>
+                <a href="{% url 'cards:card_create' %}?deck={{ deck.pk }}" class="text-black text-xs font-semibold mt-2 inline-block hover:underline">+ Add Card</a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,117 @@
+{% extends 'base.html' %}
+
+{% block title %}Decks{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold tracking-tight text-neutral-900">Decks</h1>
+            <p class="text-xs text-neutral-500">Your flashcard collections</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            {% if total_due > 0 %}
+                <a href="{% url 'study:study_all' %}" class="inline-flex items-center space-x-1.5 bg-black hover:bg-neutral-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                    <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                    <span>Study Due ({{ total_due }})</span>
+                </a>
+            {% endif %}
+            <a href="{% url 'decks:deck_create' %}" class="inline-flex items-center space-x-1 bg-white hover:bg-neutral-100 text-neutral-900 border border-neutral-300 text-xs font-semibold px-3.5 py-2 rounded-lg transition">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>New Deck</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-3 gap-3">
+        <div class="bg-white p-4 rounded-xl border border-neutral-200">
+            <span class="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Total</span>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ total_cards }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-neutral-200">
+            <span class="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">Due</span>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ total_due }}</p>
+        </div>
+        <div class="bg-white p-4 rounded-xl border border-neutral-200">
+            <span class="text-[11px] font-medium text-neutral-500 uppercase tracking-wider">New</span>
+            <p class="text-2xl font-bold text-neutral-900 mt-1">{{ total_new }}</p>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg-white p-3 rounded-xl border border-neutral-200">
+        <form method="get" class="flex items-center space-x-2">
+            <div class="relative w-full max-w-sm">
+                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-2.5 text-neutral-400"></i>
+                <input type="text" name="q" value="{{ query }}" placeholder="Search decks..." class="w-full pl-9 pr-3 py-1.5 bg-neutral-50 border border-neutral-200 rounded-lg text-xs focus:outline-none focus:border-black">
+            </div>
+            <button type="submit" class="bg-neutral-100 hover:bg-neutral-200 text-neutral-800 text-xs font-medium px-3 py-1.5 rounded-lg border border-neutral-200 transition">
+                Search
+            </button>
+            {% if query %}
+                <a href="{% url 'decks:deck_list' %}" class="text-xs text-neutral-500 hover:text-black">Clear</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Decks List -->
+    {% if decks %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for deck in decks %}
+                <div class="bg-white rounded-xl border border-neutral-200 p-5 flex flex-col justify-between hover:border-black transition">
+                    <div>
+                        <div class="flex items-start justify-between">
+                            <h3 class="font-bold text-base text-neutral-900 hover:underline">
+                                <a href="{% url 'decks:deck_detail' deck.pk %}">{{ deck.name }}</a>
+                            </h3>
+                            <span class="text-xs font-mono text-neutral-400">{{ deck.total_cards }} cards</span>
+                        </div>
+
+                        {% if deck.description %}
+                            <p class="text-xs text-neutral-600 mt-2 line-clamp-2">{{ deck.description }}</p>
+                        {% endif %}
+
+                        <!-- Counters -->
+                        <div class="flex items-center space-x-4 mt-4 pt-3 border-t border-neutral-100 text-xs text-neutral-500">
+                            <div>
+                                <span class="font-semibold text-neutral-900">{{ deck.due_cards_count }}</span> due
+                            </div>
+                            <div>
+                                <span class="font-semibold text-neutral-900">{{ deck.learning_cards_count }}</span> learning
+                            </div>
+                            <div>
+                                <span class="font-semibold text-neutral-900">{{ deck.new_cards_count }}</span> new
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="mt-5 pt-3 border-t border-neutral-100 flex items-center justify-between">
+                        <a href="{% url 'decks:deck_detail' deck.pk %}" class="text-xs font-medium text-neutral-600 hover:text-black">
+                            Manage
+                        </a>
+
+                        {% if deck.ready_to_study_count > 0 %}
+                            <a href="{% url 'study:study_deck' deck.pk %}" class="bg-black hover:bg-neutral-800 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition">
+                                Study
+                            </a>
+                        {% else %}
+                            <span class="text-xs text-neutral-400 font-medium">Done</span>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-16 bg-white rounded-xl border border-neutral-200 p-8">
+            <h3 class="text-base font-bold text-neutral-900">No decks found</h3>
+            <p class="text-xs text-neutral-500 mt-1 mb-4">Create your first deck to get started.</p>
+            <a href="{% url 'decks:deck_create' %}" class="bg-black hover:bg-neutral-800 text-white text-xs font-semibold px-4 py-2 rounded-lg transition">
+                Create Deck
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
