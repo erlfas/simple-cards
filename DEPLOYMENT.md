@@ -11,7 +11,7 @@ It includes commands to **detect, clean up, and overwrite any pre-existing or co
 * **Application:** Simple Cards (Spaced Repetition Flashcard App)
 * **Default Domain:** `simplecards.blottogbar.no`
 * **Application Path:** `/var/www/simplecards`
-* **WSGI Application Server:** Gunicorn (`config.wsgi:application` bound to `127.0.0.1:8000`)
+* **WSGI Application Server:** Gunicorn (`config.wsgi:application` bound to `127.0.0.1:8002`)
 * **Reverse Proxy:** Nginx (port 80 → 443 SSL redirect, proxying dynamic traffic to Gunicorn and serving `/static/`)
 * **Database:** PostgreSQL (`simple_cards` database)
 * **Application-Level Encryption:** Fernet (AES-128-CBC + HMAC-SHA256) via `FIELD_ENCRYPTION_KEY`
@@ -185,7 +185,7 @@ WorkingDirectory=/var/www/simplecards
 EnvironmentFile=/var/www/simplecards/.env
 ExecStart=/var/www/simplecards/venv/bin/gunicorn \
           --workers 3 \
-          --bind 127.0.0.1:8000 \
+          --bind 127.0.0.1:8002 \
           --access-logfile - \
           --error-logfile - \
           config.wsgi:application
@@ -234,7 +234,7 @@ server {
 
     # Pass dynamic traffic to Gunicorn
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:8002;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;

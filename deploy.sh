@@ -13,6 +13,7 @@ DB_NAME="${DB_NAME:-simple_cards}"
 DB_USER="${DB_USER:-simplecards_user}"
 DB_PASS="${DB_PASSWORD:-$(openssl rand -base64 16 | tr -dc 'a-zA-Z0-9' | head -c 16)}"
 SSL_EMAIL="${SSL_EMAIL:-admin@${DOMAIN}}"
+APP_PORT="${APP_PORT:-8002}"
 
 echo "========================================================="
 echo "   🚀 Simple Cards Deployment & Update"
@@ -106,9 +107,8 @@ chown -R www-data:www-data "${APP_DIR}"
 chmod -R 755 "${APP_DIR}/staticfiles" 2>/dev/null || true
 
 # 7. Configure Gunicorn Systemd Service
-if [ ! -f "/etc/systemd/system/gunicorn_simplecards.service" ]; then
-  echo "[*] Creating Gunicorn systemd service..."
-  cat << EOF > /etc/systemd/system/gunicorn_simplecards.service
+echo "[*] Updating Gunicorn systemd service on port ${APP_PORT}..."
+cat << EOF > /etc/systemd/system/gunicorn_simplecards.service
 [Unit]
 Description=Gunicorn daemon for Simple Cards
 After=network.target postgresql.service
@@ -120,7 +120,7 @@ WorkingDirectory=${APP_DIR}
 EnvironmentFile=${APP_DIR}/.env
 ExecStart=${APP_DIR}/venv/bin/gunicorn \\
           --workers 3 \\
-          --bind 127.0.0.1:8000 \\
+          --bind 127.0.0.1:${APP_PORT} \\
           --access-logfile - \\
           --error-logfile - \\
           config.wsgi:application
@@ -131,9 +131,8 @@ RestartSec=3
 [Install]
 WantedBy=multi-user.target
 EOF
-  systemctl daemon-reload
-  systemctl enable gunicorn_simplecards
-fi
+systemctl daemon-reload
+systemctl enable gunicorn_simplecards
 
 # Restart Gunicorn to apply changes
 echo "[*] Restarting Gunicorn..."
@@ -158,7 +157,7 @@ server {
     }
 
     location / {
-        proxy_pass http://127.0.0.1:8000;
+        proxy_pass http://127.0.0.1:${APP_PORT};
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -167,6 +166,9 @@ server {
 }
 EOF
   ln -sf /etc/nginx/sites-available/${DOMAIN} /etc/nginx/sites-enabled/
+else
+  # If site file already exists, update the proxy_pass port to match APP_PORT
+  sed -i "s|proxy_pass http://127.0.0.1:[0-9]*;|proxy_pass http://127.0.0.1:${APP_PORT};|g" "/etc/nginx/sites-available/${DOMAIN}"
 fi
 
 nginx -t
