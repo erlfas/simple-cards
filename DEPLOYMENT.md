@@ -1,6 +1,6 @@
-# Simple Cards - Production Deployment Guide (Ubuntu 22.04 LTS)
+# Simple Flashcards - Production Deployment Guide (Ubuntu 22.04 LTS)
 
-This guide walks you through deploying **Simple Cards** to an **Ubuntu 22.04 LTS** VPS using **PostgreSQL**, **Gunicorn (Systemd)**, **Nginx**, and **Let's Encrypt (Certbot)** for SSL/TLS.
+This guide walks you through deploying **Simple Flashcards** to an **Ubuntu 22.04 LTS** VPS using **PostgreSQL**, **Gunicorn (Systemd)**, **Nginx**, and **Let's Encrypt (Certbot)** for SSL/TLS.
 
 It includes commands to **detect, clean up, and overwrite any pre-existing or conflicting configurations** from previous setups.
 
@@ -8,7 +8,7 @@ It includes commands to **detect, clean up, and overwrite any pre-existing or co
 
 ## Architecture Overview
 
-* **Application:** Simple Cards (Spaced Repetition Flashcard App)
+* **Application:** Simple Flashcards (Spaced Repetition Flashcard App)
 * **Default Domain:** `simplecards.blottogbar.no`
 * **Application Path:** `/var/www/simplecards`
 * **WSGI Application Server:** Gunicorn (`config.wsgi:application` bound to `127.0.0.1:8002`)
@@ -175,13 +175,14 @@ Create `/etc/systemd/system/gunicorn_simplecards.service`:
 ```bash
 sudo tee /etc/systemd/system/gunicorn_simplecards.service << 'EOF'
 [Unit]
-Description=Gunicorn daemon for Simple Cards
+Description=Gunicorn daemon for Simple Flashcards
 After=network.target postgresql.service
 
 [Service]
 User=www-data
 Group=www-data
 WorkingDirectory=/var/www/simplecards
+Environment=HOME=/var/www/simplecards
 EnvironmentFile=/var/www/simplecards/.env
 ExecStart=/var/www/simplecards/venv/bin/gunicorn \
           --workers 3 \

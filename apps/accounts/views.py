@@ -14,7 +14,7 @@ def register_view(request):
         if form.is_valid():
             user = form.save()
             login(request, user)
-            messages.success(request, f"Welcome to Anki Flashcards, {user.username}! Your account is ready.")
+            messages.success(request, f"Welcome to Simple Flashcards, {user.username}! Your account is ready.")
             return redirect('decks:deck_list')
     else:
         form = RegisterForm()

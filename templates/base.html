@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Simple Cards{% endblock %} - Flashcard Spaced Repetition</title>
+    <title>{% block title %}Simple Flashcards{% endblock %} - Spaced Repetition</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -57,7 +57,7 @@
                         <div class="w-8 h-8 rounded-lg bg-black text-white flex items-center justify-center">
                             <i data-lucide="layers" class="w-4 h-4"></i>
                         </div>
-                        <span>Simple Cards</span>
+                        <span>Simple Flashcards</span>
                     </a>
                     {% if user.is_authenticated %}
                     <div class="hidden md:flex space-x-1">
@@ -132,7 +132,7 @@
     <footer class="bg-white border-t border-neutral-200 py-6 mt-auto">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-neutral-500 gap-2">
             <div>
-                <span class="font-medium text-neutral-700">Simple Cards</span> &mdash; Minimalist Spaced Repetition
+                <span class="font-medium text-neutral-700">Simple Flashcards</span> &mdash; Minimalist Spaced Repetition
             </div>
             <div>
                 <span>Space to flip &bull; 1-4 to rate</span>

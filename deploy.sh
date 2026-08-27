@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Simple Cards - Automated VPS Deployment & Daily Update Script
+# Simple Flashcards - Automated VPS Deployment & Daily Update Script
 # Target OS: Ubuntu 22.04 LTS / Debian
 # Safe to run repeatedly for initial setup and daily code updates.
 # ==============================================================================
@@ -16,7 +16,7 @@ SSL_EMAIL="${SSL_EMAIL:-admin@${DOMAIN}}"
 APP_PORT="${APP_PORT:-8002}"
 
 echo "========================================================="
-echo "   🚀 Simple Cards Deployment & Update"
+echo "   🚀 Simple Flashcards Deployment & Update"
 echo "========================================================="
 
 # 1. Require root / sudo
@@ -110,13 +110,14 @@ chmod -R 755 "${APP_DIR}/staticfiles" 2>/dev/null || true
 echo "[*] Updating Gunicorn systemd service on port ${APP_PORT}..."
 cat << EOF > /etc/systemd/system/gunicorn_simplecards.service
 [Unit]
-Description=Gunicorn daemon for Simple Cards
+Description=Gunicorn daemon for Simple Flashcards
 After=network.target postgresql.service
 
 [Service]
 User=www-data
 Group=www-data
 WorkingDirectory=${APP_DIR}
+Environment=HOME=${APP_DIR}
 EnvironmentFile=${APP_DIR}/.env
 ExecStart=${APP_DIR}/venv/bin/gunicorn \\
           --workers 3 \\
@@ -181,7 +182,7 @@ if command -v ufw >/dev/null 2>&1; then
 fi
 
 echo "========================================================="
-echo "   ✅ Simple Cards Updated & Live in Production!"
+echo "   ✅ Simple Flashcards Updated & Live in Production!"
 echo "========================================================="
 if [ "$FIRST_TIME" = true ]; then
   echo ""

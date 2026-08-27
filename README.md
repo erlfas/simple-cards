@@ -1,4 +1,4 @@
-# 🗂️ Simple Cards - Minimalist Spaced Repetition
+# 🗂️ Simple Flashcards - Minimalist Spaced Repetition
 
 A clean, minimalist black-and-white flashcard application with Anki-inspired Spaced Repetition (SM-2), built with **Python**, **Django 5**, and **PostgreSQL**.
 
